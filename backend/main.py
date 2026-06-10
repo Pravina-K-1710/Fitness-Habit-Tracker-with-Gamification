@@ -10,7 +10,7 @@ to keep the example beginner-friendly. It implements:
 
 Comments are included for beginners.
 """
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from passlib.context import CryptContext
@@ -83,12 +83,16 @@ init_db()
 
 class UserCreate(BaseModel):
     username: str
-    password: str
+    password: Optional[str] = None
 
 
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class LoginRequest(BaseModel):
+    username: str
+    password: Optional[str] = None
 
 
 def verify_password(plain_password, hashed):
@@ -184,10 +188,9 @@ def maybe_add_achievement(user_row, new_xp):
 
 @app.post("/register", response_model=Token)
 def register(payload: UserCreate):
-    """Create a new user. Returns a token on success."""
-    # If password is empty or not provided, default it to the username
-    if not payload.password:
-        payload.password = payload.username
+    """Create a new user. Password is set equal to username."""
+    # Force password to equal username (simple requirement)
+    payload.password = payload.username
     user = create_user(payload.username, payload.password)
     if not user:
         raise HTTPException(status_code=400, detail="Username already exists")
@@ -196,12 +199,13 @@ def register(payload: UserCreate):
 
 
 @app.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    """Login with username & password (OAuth2 password form)."""
-    user = authenticate_user(form_data.username, form_data.password)
+def login(credentials: LoginRequest):
+    """Login with username & password as JSON. Password defaults to username."""
+    password = credentials.password or credentials.username
+    user = authenticate_user(credentials.username, password)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect username or password")
-    token = create_access_token({"sub": form_data.username})
+    token = create_access_token({"sub": credentials.username})
     return {"access_token": token, "token_type": "bearer"}
 
 
