@@ -1,1 +1,1 @@
-
+Gamification Problem Statement Most people fail to stay consistent with fitness habits. Build a gamified fitness tracker landing page where users level up by completing daily goals. Frontend Layout Idea * Game-inspired dashboard * XP progress bars * Achievement badges * Animated mascot section Backend Fun
